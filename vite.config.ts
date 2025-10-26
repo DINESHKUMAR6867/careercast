@@ -9,6 +9,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  base: './', // ✅ Ensures correct relative asset paths in Vercel
   build: {
     outDir: 'dist',
     sourcemap: false,
@@ -17,7 +18,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3000', // works locally
         changeOrigin: true,
       },
     },
