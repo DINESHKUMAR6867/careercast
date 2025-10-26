@@ -13,6 +13,7 @@
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
     "@supabase/supabase-js": "^2.76.1",
+    "@vercel/node": "^2.10.3",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
     "docx": "^9.5.1",

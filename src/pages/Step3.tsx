@@ -5,7 +5,8 @@ import { Button } from "../components/ui/button";
 import { Check, Loader2, AlertCircle } from "lucide-react";
 
 // ✅ real GPT endpoint
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+// Handle both Vercel and local environment variables
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
 
 const Step3: React.FC = () => {
   const navigate = useNavigate();
@@ -16,23 +17,40 @@ const Step3: React.FC = () => {
 
   // ----------- GPT PROMPT FUNCTION -------------
   const callOpenAI = async (prompt: string): Promise<string> => {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini", // or "gpt-4-turbo"
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
-        max_tokens: 350,
-      }),
-    });
+    // For Vercel deployment, use the backend API endpoint instead of calling OpenAI directly from frontend
+    if (process.env.NODE_ENV === 'production') {
+      // In production, call our own backend endpoint
+      const response = await fetch("/api/generate-introduction", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt }),
+      });
 
-    if (!response.ok) throw new Error("Failed to reach OpenAI API");
-    const data = await response.json();
-    return data.choices[0].message.content.trim();
+      if (!response.ok) throw new Error("Failed to generate introduction");
+      const data = await response.json();
+      return data.introduction;
+    } else {
+      // In development, call OpenAI directly
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini", // or "gpt-4-turbo"
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: 350,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to reach OpenAI API");
+      const data = await response.json();
+      return data.choices[0].message.content.trim();
+    }
   };
 
   // ------------- PROMPT BUILDER ----------------

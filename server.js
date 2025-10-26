@@ -5,10 +5,20 @@ import axios from 'axios';
 import { fileURLToPath } from 'url';
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
+
 // --- Supabase setup ---
+// Use Vercel environment variables or fallback to local development
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+// Ensure we have the required environment variables
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('Missing Supabase environment variables: SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY');
+}
+
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  supabaseUrl,
+  supabaseServiceKey
 );
 
 // Fix for __dirname in ES modules
@@ -18,11 +28,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // Your Microsoft 365 credentials
+// Use Vercel environment variables or fallback to local development
 export const MS365_CONFIG = {
-  tenantId: import.meta.env.VITE_TENANT_ID,
-  clientId: import.meta.env.VITE_CLIENT_ID,
-  clientSecret: import.meta.env.VITE_CLIENT_SECRET,
-  senderEmail: import.meta.env.VITE_SENDER_EMAIL,
+  tenantId: process.env.VITE_TENANT_ID || process.env.TENANT_ID,
+  clientId: process.env.VITE_CLIENT_ID || process.env.CLIENT_ID,
+  clientSecret: process.env.VITE_CLIENT_SECRET || process.env.CLIENT_SECRET,
+  senderEmail: process.env.VITE_SENDER_EMAIL || process.env.SENDER_EMAIL,
 };
 
 
@@ -203,9 +214,18 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
+// For Vercel, we export the app as a handler
+// For local development, we start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 CareerCast Server running on port ${PORT}`);
-  console.log(`📧 Email service ready`);
-  console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
-});
+
+// Export for Vercel serverless functions
+export default app;
+
+// Start server for local development
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 CareerCast Server running on port ${PORT}`);
+    console.log(`📧 Email service ready`);
+    console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
+  });
+}
