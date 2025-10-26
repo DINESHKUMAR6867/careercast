@@ -1,6 +1,6 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { emailService } from '../services/emailService';
-import { otpService } from '../services/otpService';
+import { otpService } from "../services/otpService";
 import { supabase } from '../integrations/supabase/client';
 
 interface User {

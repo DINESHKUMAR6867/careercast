@@ -1,3 +1,5 @@
+// src/services/otpService.ts
+
 interface OTPData {
   email: string;
   otp: string;
@@ -13,42 +15,33 @@ class OTPService {
   }
 
   storeOTP(email: string, otp: string): void {
-    const expiresAt = Date.now() + 10 * 60 * 1000;
-    this.otpStorage.set(email, {
-      email,
-      otp,
-      expiresAt,
-      verified: false
-    });
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+    this.otpStorage.set(email, { email, otp, expiresAt, verified: false });
 
+    // Auto-delete after expiry
     setTimeout(() => {
       this.otpStorage.delete(email);
     }, 10 * 60 * 1000);
   }
 
   verifyOTP(email: string, otp: string): boolean {
-    const storedOTP = this.otpStorage.get(email);
-    
-    if (!storedOTP) {
-      return false;
-    }
+    const record = this.otpStorage.get(email);
+    if (!record) return false;
 
-    if (Date.now() > storedOTP.expiresAt) {
+    if (Date.now() > record.expiresAt) {
       this.otpStorage.delete(email);
       return false;
     }
 
-    if (storedOTP.otp === otp) {
-      storedOTP.verified = true;
+    if (record.otp === otp) {
+      record.verified = true;
       return true;
     }
-
     return false;
   }
 
   isOTPVerified(email: string): boolean {
-    const storedOTP = this.otpStorage.get(email);
-    return storedOTP?.verified || false;
+    return this.otpStorage.get(email)?.verified || false;
   }
 
   removeOTP(email: string): void {
@@ -56,4 +49,6 @@ class OTPService {
   }
 }
 
+// ✅ Export both named and default — compatible with all imports
 export const otpService = new OTPService();
+export default otpService;
