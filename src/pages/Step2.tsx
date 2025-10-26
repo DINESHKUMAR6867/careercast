@@ -7,9 +7,9 @@ import { supabase } from "../integrations/supabase/client";
 import { useAuth } from "../contexts/AuthContext";
 import mammoth from "mammoth";
 import * as pdfjsLib from "pdfjs-dist";
-import { GlobalWorkerOptions } from "pdfjs-dist/build/pdf";
-
+import { GlobalWorkerOptions } from "pdfjs-dist";
 GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
 
 const Step2: React.FC = () => {
   const navigate = useNavigate();
@@ -83,9 +83,10 @@ const Step2: React.FC = () => {
       const fileExt = selectedFile.name.split(".").pop()?.toLowerCase();
 
       const firstName =
-        localStorage.getItem("first_name") ||
-        user?.user_metadata?.full_name?.split(" ")[0] ||
-        "user";
+  localStorage.getItem("first_name") ||
+  (user && (user as any)?.user_metadata?.full_name?.split(" ")[0]) ||
+  "user";
+
 
       const cleanFirstName = firstName.trim().replace(/\s+/g, "_").toLowerCase();
       const fileName = `${cleanFirstName}_careercast_resume.${fileExt}`;
