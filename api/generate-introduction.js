@@ -30,10 +30,23 @@ export default async function handler(request, response) {
 
     console.log('📥 Processing POST request');
     
-    // Parse JSON body - more robust handling
+    // Parse JSON body - using a more compatible approach for Vercel
     let jsonData;
     try {
-      jsonData = await request.json();
+      // Alternative approach for Vercel functions
+      const chunks = [];
+      for await (const chunk of request) {
+        chunks.push(chunk);
+      }
+      const rawBody = Buffer.concat(chunks).toString();
+      console.log('📥 Raw body length:', rawBody.length);
+      
+      if (rawBody) {
+        jsonData = JSON.parse(rawBody);
+      } else {
+        jsonData = {};
+      }
+      
       console.log('📥 Parsed JSON data type:', typeof jsonData);
       console.log('📥 Parsed JSON keys:', jsonData ? Object.keys(jsonData) : 'null');
     } catch (parseError) {
