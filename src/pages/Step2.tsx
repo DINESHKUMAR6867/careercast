@@ -6,13 +6,10 @@ import { Check } from "lucide-react";
 import { supabase } from "../integrations/supabase/client";
 import { useAuth } from "../contexts/AuthContext";
 import mammoth from "mammoth";
+import * as pdfjsLib from "pdfjs-dist";
+import { GlobalWorkerOptions } from "pdfjs-dist/build/pdf";
 
-// ✅ PDF.js worker setup for Vite
-import * as pdfjsLib from "pdfjs-dist/build/pdf";
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.js?url";
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-
+GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const Step2: React.FC = () => {
   const navigate = useNavigate();
@@ -23,44 +20,56 @@ const Step2: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  // ✅ Handle file selection
   const handleFileSelect = (file: File) => {
     const validTypes = [
       "application/pdf",
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ];
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    if (!validTypes.includes(file.type) && !["pdf", "doc", "docx"].includes(ext || "")) {
+    const fileExtension = file.name.split(".").pop()?.toLowerCase();
+
+    if (!validTypes.includes(file.type) && !["pdf", "doc", "docx"].includes(fileExtension || "")) {
       alert("Please upload a PDF or DOCX file.");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      alert("File size exceeds 10 MB limit.");
+
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("File size exceeds 10MB limit.");
       return;
     }
+
     setSelectedFile(file);
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) handleFileSelect(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) {
+      handleFileSelect(e.target.files[0]);
+    }
   };
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files?.[0]) handleFileSelect(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect(e.dataTransfer.files[0]);
+    }
   };
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
   };
-  const handleDragLeave = () => setIsDragging(false);
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
   const removeFile = () => {
     setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // ✅ Handle upload & extraction
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) return alert("Please select a resume file.");
@@ -71,53 +80,55 @@ const Step2: React.FC = () => {
       const jobRequestId = localStorage.getItem("current_job_request_id");
       if (!jobRequestId) throw new Error("Missing job request ID (Step 1 not saved).");
 
-      // --- Prepare metadata
-      const ext = selectedFile.name.split(".").pop()?.toLowerCase();
-      const firstName =
-  localStorage.getItem("first_name") ||
-  ((user as any)?.user_metadata?.full_name?.split(" ")[0]) ||
-  "user";
+      const fileExt = selectedFile.name.split(".").pop()?.toLowerCase();
 
-      const cleanFirst = firstName.trim().replace(/\s+/g, "_").toLowerCase();
-      const fileName = `${cleanFirst}_careercast_resume.${ext}`;
+      const firstName =
+        localStorage.getItem("first_name") ||
+        user?.user_metadata?.full_name?.split(" ")[0] ||
+        "user";
+
+      const cleanFirstName = firstName.trim().replace(/\s+/g, "_").toLowerCase();
+      const fileName = `${cleanFirstName}_careercast_resume.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      // --- Upload to Supabase
+      // 🔹 Upload to Supabase
       const { error: uploadError } = await supabase.storage
         .from("resumes")
         .upload(filePath, selectedFile, { upsert: true });
       if (uploadError) throw uploadError;
 
-      // --- Get public URL
       const { data: publicData } = supabase.storage.from("resumes").getPublicUrl(filePath);
       const publicUrl = publicData?.publicUrl ?? null;
 
-      // --- Extract text
+      // 🔹 Extract text
       let extractedText = "";
       const buffer = await selectedFile.arrayBuffer();
 
-      if (ext === "pdf") {
-        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-        let textContent = "";
+      if (fileExt === "pdf") {
+        const loadingTask = pdfjsLib.getDocument({ data: buffer });
+        const pdf = await loadingTask.promise;
+        let text = "";
+
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
-          const text = await page.getTextContent();
-          textContent += text.items.map((it: any) => it.str).join(" ") + " ";
+          const content = await page.getTextContent();
+          const pageText = content.items.map((item: any) => item.str).join(" ");
+          text += pageText + " ";
         }
-        extractedText = textContent;
-      } else if (["docx", "doc"].includes(ext || "")) {
+        extractedText = text;
+      } else if (["docx", "doc"].includes(fileExt || "")) {
         const { value } = await mammoth.extractRawText({ arrayBuffer: buffer });
         extractedText = value;
       }
 
       extractedText = extractedText.replace(/\s+/g, " ").trim().slice(0, 10000);
 
-      // --- Store locally for Step3
+      // 🔹 Save to localStorage
       localStorage.setItem("uploadedResumeUrl", publicUrl || "");
       localStorage.setItem("resumeFileName", fileName);
       localStorage.setItem("resumeFullText", extractedText);
 
-      // --- Update DB
+      // 🔹 Update Supabase
       const { error: updateError } = await supabase
         .from("job_requests")
         .update({
@@ -127,9 +138,10 @@ const Step2: React.FC = () => {
           updated_at: new Date().toISOString(),
         })
         .eq("id", jobRequestId);
+
       if (updateError) throw updateError;
 
-      alert("✅ Resume uploaded successfully!");
+      alert("✅ Resume uploaded and text extracted successfully!");
       navigate("/step3");
     } catch (err: any) {
       console.error("❌ Upload failed:", err.message);
@@ -139,22 +151,19 @@ const Step2: React.FC = () => {
     }
   };
 
-  // Format file size
-  const formatFileSize = (bytes: number): string =>
-    bytes < 1024
-      ? bytes + " bytes"
-      : bytes < 1048576
-      ? (bytes / 1024).toFixed(1) + " KB"
-      : (bytes / 1048576).toFixed(1) + " MB";
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + " bytes";
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+    else return (bytes / 1048576).toFixed(1) + " MB";
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-8 px-4">
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          {/* Progress Indicator */}
           <div className="flex justify-between items-center mb-6 relative px-8">
             <div className="absolute top-4 left-16 right-16 h-0.5 bg-gray-300 -z-10">
-              <div className="h-full bg-green-500 w-1/2" />
+              <div className="h-full bg-green-500 w-1/2"></div>
             </div>
 
             <div className="flex flex-col items-center relative z-10">
@@ -202,7 +211,7 @@ const Step2: React.FC = () => {
                   <p className="text-lg font-medium text-gray-700 mb-2">
                     Click to upload or drag and drop
                   </p>
-                  <p className="text-sm text-gray-500">PDF or DOCX (max 10 MB)</p>
+                  <p className="text-sm text-gray-500">PDF or DOCX (max 10MB)</p>
                 </div>
               ) : (
                 <div className="text-center">
@@ -211,6 +220,7 @@ const Step2: React.FC = () => {
                   <p className="text-sm text-gray-500">Ready to proceed to next step</p>
                 </div>
               )}
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -240,23 +250,7 @@ const Step2: React.FC = () => {
               </div>
             )}
 
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
-              <h4 className="font-semibold text-gray-800 mb-2 flex items-center">
-                <span className="mr-2">💡</span> How your resume will be used:
-              </h4>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• AI will analyze your skills and experience</li>
-                <li>• Personalized teleprompter script will be generated</li>
-                <li>• Professional self-introduction tailored to the job</li>
-                <li>• Your information stays secure and private</li>
-              </ul>
-            </div>
-
-            <p className="text-center text-gray-500 text-sm mt-4 mb-6">
-              We'll use your resume to create a personalized teleprompter script
-            </p>
-
-            <div className="flex justify-between pt-4">
+            <div className="flex justify-between pt-6">
               <Button
                 type="button"
                 variant="outline"
@@ -265,19 +259,8 @@ const Step2: React.FC = () => {
               >
                 Back
               </Button>
-              <Button
-                type="submit"
-                disabled={!selectedFile || isUploading}
-                className="min-w-[120px]"
-              >
-                {isUploading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                    Uploading...
-                  </>
-                ) : (
-                  "Next Step →"
-                )}
+              <Button type="submit" disabled={!selectedFile || isUploading} className="min-w-[120px]">
+                {isUploading ? "Uploading..." : "Next Step →"}
               </Button>
             </div>
           </form>
