@@ -447,7 +447,7 @@ const FinalResult: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
 
-  // ✅ Load data from localStorage
+  // ✅ Load stored resume and video data
   useEffect(() => {
     const uploadedResumeUrl = localStorage.getItem("uploadedResumeUrl");
     const fileName = localStorage.getItem("resumeFileName");
@@ -464,7 +464,6 @@ const FinalResult: React.FC = () => {
     });
   }, []);
 
-  // ✅ Play video modal
   const handlePlayVideo = () => {
     if (!videoUrl) {
       alert("No recorded video found for this profile.");
@@ -478,81 +477,66 @@ const FinalResult: React.FC = () => {
     navigate("/");
   };
 
-  // ✅ Enhance PDF with embedded play button
-  // ✅ Enhance PDF with embedded clickable "Play Video" button
-const enhancePDF = async (resumeUrl: string, castId: string) => {
-  try {
-    const baseUrl = window.location.origin;
-    const finalResultUrl = `${baseUrl}/final-result/${castId || "profile"}`; // <-- ensures correct redirect
-    console.log("🎯 Embedding redirect to:", finalResultUrl);
+  // ✅ Embed play-button image that links back to /final-result/:castId
+  const enhancePDF = async (resumeUrl: string, castId: string) => {
+    try {
+      const baseUrl = window.location.origin;
+      const redirectUrl = `${baseUrl}/final-result/${castId || "profile"}`;
+      console.log("🎯 Embedding redirect link:", redirectUrl);
 
-    // Fetch and load the existing PDF
-    const existingPdfBytes = await fetch(resumeUrl).then((res) => res.arrayBuffer());
-    const pdfDoc = await PDFDocument.load(existingPdfBytes);
-    const firstPage = pdfDoc.getPages()[0];
-    const { width, height } = firstPage.getSize();
+      // 1️⃣ Fetch and load existing PDF
+      const pdfBytes = await fetch(resumeUrl, { mode: "cors" }).then((r) => r.arrayBuffer());
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const page = pdfDoc.getPages()[0];
+      const { width, height } = page.getSize();
 
-    // Load the play button image from public folder
-    const imagePath = `${baseUrl}/images/play_video_button.png`;
-    console.log("🖼️ Embedding play button from:", imagePath);
-    const imageResponse = await fetch(imagePath);
-    if (!imageResponse.ok) throw new Error(`Button image not found at ${imagePath}`);
+      // 2️⃣ Fetch and embed the play button image
+      const imagePath = `${baseUrl}/images/play_video_button.png`;
+      const imageRes = await fetch(imagePath);
+      if (!imageRes.ok) throw new Error(`Button image not found at ${imagePath}`);
+      const imgBytes = await imageRes.arrayBuffer();
+      const playImg = await pdfDoc.embedPng(imgBytes);
 
-    const imageBytes = await imageResponse.arrayBuffer();
-    const playButtonImage = await pdfDoc.embedPng(imageBytes);
+      // 3️⃣ Draw image at visible spot (bottom-right)
+      const btnW = 140;
+      const btnH = 44;
+      const x = width - btnW - 36;
+      const y = 36;
+      page.drawImage(playImg, { x, y, width: btnW, height: btnH });
 
-    // Position button (bottom-right corner)
-    const buttonWidth = 120;
-    const buttonHeight = 40;
-    const x = width - buttonWidth - 40;
-    const y = 40;
+      // 4️⃣ Create clickable annotation over the image
+      const ctx = pdfDoc.context;
+      const annot = ctx.obj({
+        Type: PDFName.of("Annot"),
+        Subtype: PDFName.of("Link"),
+        Rect: ctx.obj([
+          PDFNumber.of(x),
+          PDFNumber.of(y),
+          PDFNumber.of(x + btnW),
+          PDFNumber.of(y + btnH),
+        ]),
+        Border: ctx.obj([PDFNumber.of(0), PDFNumber.of(0), PDFNumber.of(0)]),
+        A: ctx.obj({
+          S: PDFName.of("URI"),
+          URI: PDFString.of(redirectUrl),
+        }),
+      });
 
-    // Draw the play button image
-    firstPage.drawImage(playButtonImage, {
-      x,
-      y,
-      width: buttonWidth,
-      height: buttonHeight,
-    });
+      let annots = page.node.lookup(PDFName.of("Annots"));
+      if (annots instanceof PDFArray) annots.push(annot);
+      else page.node.set(PDFName.of("Annots"), ctx.obj([annot]));
 
-    // ✅ Create clickable annotation linking to FinalResult page
-    const context = pdfDoc.context;
-    const annotationDict = context.obj({
-      Type: PDFName.of("Annot"),
-      Subtype: PDFName.of("Link"),
-      Rect: context.obj([
-        PDFNumber.of(x),
-        PDFNumber.of(y),
-        PDFNumber.of(x + buttonWidth),
-        PDFNumber.of(y + buttonHeight),
-      ]),
-      Border: context.obj([PDFNumber.of(0), PDFNumber.of(0), PDFNumber.of(0)]),
-      A: context.obj({
-        S: PDFName.of("URI"),
-        URI: PDFString.of(finalResultUrl), // <-- this is the key link
-      }),
-    });
-
-    // Add annotation to the page
-    let annots = firstPage.node.lookup(PDFName.of("Annots"));
-    if (annots instanceof PDFArray) {
-      annots.push(annotationDict);
-    } else {
-      const annotsArray = context.obj([annotationDict]);
-      firstPage.node.set(PDFName.of("Annots"), annotsArray);
+      // 5️⃣ Export new PDF blob
+      const modified = await pdfDoc.save();
+      const blob = new Blob([modified], { type: "application/pdf" });
+      return URL.createObjectURL(blob);
+    } catch (err) {
+      console.error("❌ PDF enhancement failed:", err);
+      throw err;
     }
+  };
 
-    // Save the modified PDF
-    const modifiedPdfBytes = await pdfDoc.save();
-    const blob = new Blob([new Uint8Array(modifiedPdfBytes)], { type: "application/pdf" });
-    return URL.createObjectURL(blob);
-  } catch (error) {
-    console.error("❌ Error enhancing PDF:", error);
-    throw error;
-  }
-};
-
-  // ✅ Download Enhanced Resume
+  // ✅ Handle download
   const handleDownloadEnhanced = async () => {
     try {
       if (!resumeUrl) {
@@ -560,34 +544,20 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
         return;
       }
 
-      console.log("Enhancing PDF...");
       const enhancedUrl = await enhancePDF(resumeUrl, castId || "profile");
-
-      // ✅ Generate filename based on first name
-      const firstName =
-  localStorage.getItem("first_name") ||
-  ((user as any)?.user_metadata?.full_name?.split(" ")[0]) ||
-  "user";
-
-
-      const cleanFirstName = firstName.trim().replace(/\s+/g, "_").toLowerCase();
-    //   const finalFileName = `${cleanFirstName}_careercast_resume.pdf`;
-        const finalFileName = `careercast_resume.pdf`;
-
-
       const a = document.createElement("a");
       a.href = enhancedUrl;
-      a.download = finalFileName;
+      a.download = "careercast_resume.pdf";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      URL.revokeObjectURL(enhancedUrl);
     } catch (err) {
-      console.error("Error enhancing file:", err);
-      alert("Failed to enhance PDF. Please verify your button image path.");
+      alert("Failed to enhance PDF. Check console for details.");
     }
   };
 
-  // ✅ Fallback message
+  // fallback if no resume/video data
   if (!resumeUrl && !videoUrl) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -598,7 +568,7 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ===== Header Section ===== */}
+      {/* ===== Header ===== */}
       <header className="fixed top-0 left-0 right-0 bg-white border-b shadow-sm z-50">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center px-4 py-3 gap-3">
           <Button
@@ -629,6 +599,7 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
               <Play className="h-4 w-4 mr-1" fill="white" />
               Play Video
             </Button>
+
             {user && (
               <Button
                 variant="outline"
@@ -643,7 +614,7 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
         </div>
       </header>
 
-      {/* ===== Resume Display Section ===== */}
+      {/* ===== Resume Viewer ===== */}
       <div className="pt-24 pb-12 px-6">
         <div
           className="max-w-5xl mx-auto border-none shadow-none overflow-hidden flex flex-col"
@@ -657,14 +628,12 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
               style={{ height: "calc(100vh - 140px)" }}
             ></iframe>
           ) : (
-            <p className="text-gray-500 text-center py-10">
-              No resume available.
-            </p>
+            <p className="text-gray-500 text-center py-10">No resume available.</p>
           )}
         </div>
       </div>
 
-      {/* ===== Video Player Modal ===== */}
+      {/* ===== Video Modal ===== */}
       {showVideoPlayer && videoUrl && (
         <div className="fixed top-20 right-6 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-50">
           <div className="p-3 border-b border-gray-200 flex justify-between items-center">
