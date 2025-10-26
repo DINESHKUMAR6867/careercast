@@ -1,46 +1,48 @@
-export default async function handler(request, response) {
-  // Set CORS headers
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  response.setHeader('Content-Type', 'application/json');
-  
-  // Handle preflight requests
-  if (request.method === 'OPTIONS') {
-    response.status(200).end();
-    return;
+export default async function handler(req, res) {
+  // --- CORS headers ---
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Content-Type", "application/json");
+
+  // --- Handle preflight ---
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
   }
-  
-  if (request.method === 'GET') {
-    return response.status(200).json({ 
-      message: 'Test API is working',
-      method: request.method,
+
+  if (req.method === "GET") {
+    return res.status(200).json({ 
+      message: "Test API is working",
+      method: req.method,
       timestamp: new Date().toISOString()
     });
   }
-  
-  if (request.method === 'POST') {
+
+  if (req.method === "POST") {
     try {
-      // Parse JSON body using the correct Vercel approach
-      const data = await request.json();
+      // --- Parse JSON body (fix for request.json is not a function) ---
+      const buffers = [];
+      for await (const chunk of req) buffers.push(chunk);
+      const rawBody = Buffer.concat(buffers).toString();
+      const data = JSON.parse(rawBody);
       
-      return response.status(200).json({ 
-        message: 'Test POST successful',
+      return res.status(200).json({ 
+        message: "Test POST successful",
         received: data,
-        method: request.method,
+        method: req.method,
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      return response.status(400).json({ 
-        error: 'Invalid JSON',
+      return res.status(400).json({ 
+        error: "Invalid JSON",
         message: error.message
       });
     }
   }
-  
-  return response.status(405).json({ 
-    error: 'Method not allowed',
-    allowed: ['GET', 'POST'],
-    received: request.method
+
+  return res.status(405).json({ 
+    error: "Method not allowed",
+    allowed: ["GET", "POST"],
+    received: req.method
   });
 }

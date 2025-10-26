@@ -1,60 +1,56 @@
 // api/send-otp.js
 import fetch from "node-fetch";
 
-export default async function handler(request, response) {
-  // Set CORS headers
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  response.setHeader('Content-Type', 'application/json');
-  
-  // Handle preflight requests
-  if (request.method === 'OPTIONS') {
-    response.status(200).end();
-    return;
+export default async function handler(req, res) {
+  // --- CORS headers ---
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Content-Type", "application/json");
+
+  // --- Handle preflight ---
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
   }
-  
-  // Only allow POST requests
-  if (request.method !== 'POST') {
-    response.status(405).json({
-      success: false,
-      error: 'Method not allowed',
-      allowed: ['POST'],
-      received: request.method
+
+  // --- Allow only POST ---
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: "Method not allowed",
+      allowed: ["POST"],
+      received: req.method,
     });
-    return;
   }
-  
+
+  // --- Parse JSON body (fix for request.json is not a function) ---
+  let jsonData;
   try {
-    // Parse JSON body using the correct Vercel approach
-    const jsonData = await request.json();
-    const { email, otp } = jsonData || {};
-    
-    if (!email) {
-      response.status(400).json({
-        success: false,
-        error: 'Email is required'
-      });
-      return;
-    }
-    
-    // Generate OTP if not provided
-    const generatedOtp = otp || Math.floor(100000 + Math.random() * 900000);
-    
-    // Log OTP for development/testing
-    console.log(`📧 OTP for ${email}: ${generatedOtp}`);
-    
-    // Success response
-    response.status(200).json({
-      success: true,
-      message: 'OTP generated successfully',
-      developmentOtp: generatedOtp
-    });
-  } catch (error) {
-    response.status(500).json({
-      success: false,
-      error: 'Internal server error',
-      details: error.message
+    const buffers = [];
+    for await (const chunk of req) buffers.push(chunk);
+    const rawBody = Buffer.concat(buffers).toString();
+    jsonData = JSON.parse(rawBody);
+  } catch (err) {
+    return res.status(400).json({
+      error: "Invalid JSON in request body",
+      details: err.message,
     });
   }
+
+  const { email, otp } = jsonData || {};
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  // --- Generate OTP ---
+  const generatedOtp = otp || Math.floor(100000 + Math.random() * 900000);
+  
+  // Log OTP for development/testing
+  console.log(`📧 OTP for ${email}: ${generatedOtp}`);
+
+  // --- Success response ---
+  return res.status(200).json({
+    success: true,
+    message: "OTP generated successfully",
+    developmentOtp: generatedOtp
+  });
 }
