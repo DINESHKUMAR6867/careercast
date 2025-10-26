@@ -528,8 +528,9 @@ const FinalResult: React.FC = () => {
 
       // 5️⃣ Export new PDF blob
       // Save and export as Blob
-    const modifiedPdfBytes = await pdfDoc.save();
-    const blob = new Blob([modifiedPdfBytes], { type: "application/pdf" });
+      const modifiedPdfBytes = await pdfDoc.save();
+      const blob = new Blob([modifiedPdfBytes], { type: "application/pdf" });
+
     return URL.createObjectURL(blob);
             
     } catch (err) {
