@@ -9,6 +9,7 @@ export default async function handler(request, response) {
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.setHeader('Content-Type', 'application/json');
   
   // Handle preflight requests
   if (request.method === 'OPTIONS') {
@@ -28,7 +29,28 @@ export default async function handler(request, response) {
   }
   
   try {
-    const { email, otp } = await request.json();
+    // Manual body parsing to avoid iteration errors
+    const chunks = [];
+    for await (const chunk of request) {
+      chunks.push(chunk);
+    }
+    const rawBody = Buffer.concat(chunks).toString();
+    const jsonData = rawBody ? JSON.parse(rawBody) : {};
+    
+    console.log('📥 Parsed JSON data type:', typeof jsonData);
+    console.log('📥 Parsed JSON keys:', jsonData ? Object.keys(jsonData) : 'null');
+    
+    // Handle case where jsonData might not be an object
+    if (!jsonData || typeof jsonData !== 'object') {
+      console.error('❌ JSON data is not an object:', jsonData);
+      return response.status(400).json({ 
+        error: 'Invalid request body format',
+        received: jsonData,
+        type: typeof jsonData
+      });
+    }
+    
+    const { email, otp } = jsonData;
     console.log('📥 Received email:', email);
     
     if (!email) {
@@ -56,7 +78,8 @@ export default async function handler(request, response) {
     console.error('💥 Error in /api/send-otp:', error);
     response.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: 'Internal server error',
+      details: error.message
     });
   }
 }

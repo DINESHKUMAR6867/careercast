@@ -21,7 +21,14 @@ export default async function handler(request, response) {
   
   if (request.method === 'POST') {
     try {
-      const data = await request.json();
+      // Manual body parsing to avoid iteration errors
+      const chunks = [];
+      for await (const chunk of request) {
+        chunks.push(chunk);
+      }
+      const rawBody = Buffer.concat(chunks).toString();
+      const data = rawBody ? JSON.parse(rawBody) : {};
+      
       return response.status(200).json({ 
         message: 'Test POST successful',
         received: data,
