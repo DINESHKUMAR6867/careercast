@@ -2,6 +2,9 @@
 import fetch from "node-fetch";
 
 export default async function handler(request, response) {
+  // Log that the function is being called
+  console.log('🔍 /api/send-otp called with method:', request.method);
+  
   // Set CORS headers
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -9,12 +12,14 @@ export default async function handler(request, response) {
   
   // Handle preflight requests
   if (request.method === 'OPTIONS') {
+    console.log('🔍 OPTIONS preflight request handled');
     response.status(200).end();
     return;
   }
   
   // Only allow POST requests
   if (request.method !== 'POST') {
+    console.log('❌ Method not allowed:', request.method);
     response.status(405).json({
       success: false,
       error: 'Method not allowed'
@@ -24,8 +29,10 @@ export default async function handler(request, response) {
   
   try {
     const { email, otp } = await request.json();
+    console.log('📥 Received email:', email);
     
     if (!email) {
+      console.log('❌ Email is required');
       response.status(400).json({
         success: false,
         error: 'Email is required'
@@ -46,7 +53,7 @@ export default async function handler(request, response) {
       developmentOtp: generatedOtp
     });
   } catch (error) {
-    console.error('Error in /api/send-otp:', error);
+    console.error('💥 Error in /api/send-otp:', error);
     response.status(500).json({
       success: false,
       error: 'Internal server error'
