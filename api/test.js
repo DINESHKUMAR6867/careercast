@@ -21,9 +21,8 @@ export default async function handler(request, response) {
   
   if (request.method === 'POST') {
     try {
-      // Manual body parsing to avoid iteration errors
-      const rawBody = await request.text();
-      const data = rawBody ? JSON.parse(rawBody) : {};
+      // Parse JSON body using the correct Vercel approach
+      const data = await request.json();
       
       return response.status(200).json({ 
         message: 'Test POST successful',
