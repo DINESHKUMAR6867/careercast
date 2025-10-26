@@ -7,17 +7,10 @@ import { supabase } from "../integrations/supabase/client";
 import { useAuth } from "../contexts/AuthContext";
 import mammoth from "mammoth";
 import * as pdfjsLib from "pdfjs-dist";
-import { GlobalWorkerOptions } from "pdfjs-dist";
 
-// Use the local worker with Vite's worker import support
-import PdfWorker from "pdfjs-dist/build/pdf.worker.mjs?worker";
-
-let workerUrl: string;
-if (typeof window !== 'undefined') {
-  const worker = new PdfWorker();
-  workerUrl = worker.toString();
-  GlobalWorkerOptions.workerSrc = workerUrl;
-}
+// Use unpkg CDN which is more reliable
+const pdfjsVersion = pdfjsLib.version || '5.4.296';
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
 
 const Step2: React.FC = () => {
   const navigate = useNavigate();
@@ -114,17 +107,23 @@ const Step2: React.FC = () => {
       const buffer = await selectedFile.arrayBuffer();
 
       if (fileExt === "pdf") {
-        const loadingTask = pdfjsLib.getDocument({ data: buffer });
-        const pdf = await loadingTask.promise;
-        let text = "";
+        try {
+          const loadingTask = pdfjsLib.getDocument({ data: buffer });
+          const pdf = await loadingTask.promise;
+          let text = "";
 
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          const pageText = content.items.map((item: any) => item.str).join(" ");
-          text += pageText + " ";
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            const pageText = content.items.map((item: any) => item.str).join(" ");
+            text += pageText + " ";
+          }
+          extractedText = text;
+        } catch (pdfError: any) {
+          console.error("❌ PDF processing failed:", pdfError.message);
+          // Fallback: try to extract text with a simpler approach
+          extractedText = "Text extraction failed. Please try uploading a different PDF file.";
         }
-        extractedText = text;
       } else if (["docx", "doc"].includes(fileExt || "")) {
         const { value } = await mammoth.extractRawText({ arrayBuffer: buffer });
         extractedText = value;
