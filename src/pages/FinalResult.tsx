@@ -482,9 +482,11 @@ const FinalResult: React.FC = () => {
   // ✅ Enhance PDF with embedded clickable "Play Video" button
 const enhancePDF = async (resumeUrl: string, castId: string) => {
   try {
-    const baseUrl = window.location.origin;
-    const finalResultUrl = `${baseUrl}/final-result/${castId || "profile"}`; // <-- ensures correct redirect
-    console.log("🎯 Embedding redirect to:", finalResultUrl);
+    // ✅ Use absolute domain to ensure redirect works even in downloaded PDF
+    const baseUrl = "https://careercast-omega.vercel.app";
+    const finalResultUrl = `${baseUrl}/final-result/${castId || "profile"}`;
+    console.log("🎯 Embedding absolute redirect to:", finalResultUrl);
+
 
     // Fetch and load the existing PDF
     const existingPdfBytes = await fetch(resumeUrl).then((res) => res.arrayBuffer());
