@@ -19,6 +19,10 @@ const Step3: React.FC = () => {
   const callOpenAI = async (prompt: string): Promise<string> => {
     // For Vercel deployment, use the backend API endpoint instead of calling OpenAI directly from frontend
     if (process.env.NODE_ENV === 'production') {
+      console.log('📤 Sending request to /api/generate-introduction');
+      console.log('📤 Prompt length:', prompt.length);
+      console.log('📤 Prompt preview:', prompt.substring(0, 100) + '...');
+      
       // In production, call our own backend endpoint
       const response = await fetch("/api/generate-introduction", {
         method: "POST",
@@ -28,12 +32,24 @@ const Step3: React.FC = () => {
         body: JSON.stringify({ prompt }),
       });
 
+      console.log('📥 Response status:', response.status);
+      console.log('📥 Response headers:', Object.fromEntries(response.headers));
+      
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('API Error Response:', errorData);
-        throw new Error(`Failed to generate introduction: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('📥 Response text:', errorText);
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          console.error('API Error Response:', errorData);
+          throw new Error(`Failed to generate introduction: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+        } catch (e) {
+          throw new Error(`Failed to generate introduction: ${response.status} ${response.statusText} - ${errorText}`);
+        }
       }
+      
       const data = await response.json();
+      console.log('📥 Response data:', data);
       return data.introduction;
     } else {
       // In development, call OpenAI directly
