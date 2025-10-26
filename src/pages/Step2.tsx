@@ -8,8 +8,16 @@ import { useAuth } from "../contexts/AuthContext";
 import mammoth from "mammoth";
 import * as pdfjsLib from "pdfjs-dist";
 import { GlobalWorkerOptions } from "pdfjs-dist";
-GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
+// Use the local worker with Vite's worker import support
+import PdfWorker from "pdfjs-dist/build/pdf.worker.mjs?worker";
+
+let workerUrl: string;
+if (typeof window !== 'undefined') {
+  const worker = new PdfWorker();
+  workerUrl = worker.toString();
+  GlobalWorkerOptions.workerSrc = workerUrl;
+}
 
 const Step2: React.FC = () => {
   const navigate = useNavigate();
