@@ -527,9 +527,11 @@ const FinalResult: React.FC = () => {
       else page.node.set(PDFName.of("Annots"), ctx.obj([annot]));
 
       // 5️⃣ Export new PDF blob
-      const modified = await pdfDoc.save();
-      const blob = new Blob([modified], { type: "application/pdf" });
-      return URL.createObjectURL(blob);
+      // Save and export as Blob
+    const modifiedPdfBytes = await pdfDoc.save();
+    const blob = new Blob([modifiedPdfBytes], { type: "application/pdf" });
+    return URL.createObjectURL(blob);
+            
     } catch (err) {
       console.error("❌ PDF enhancement failed:", err);
       throw err;
