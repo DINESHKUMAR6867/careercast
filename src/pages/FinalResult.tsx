@@ -479,75 +479,80 @@ const FinalResult: React.FC = () => {
   };
 
   // ✅ Enhance PDF with embedded play button
-  const enhancePDF = async (resumeUrl: string, castId: string) => {
-    try {
-      const baseUrl = window.location.origin;
-      const finalResultUrl = `${baseUrl}/final-result/${castId}`;
-      console.log("Enhancing PDF with button →", finalResultUrl);
+  // ✅ Enhance PDF with embedded clickable "Play Video" button
+const enhancePDF = async (resumeUrl: string, castId: string) => {
+  try {
+    // ✅ Use absolute domain to ensure redirect works even in downloaded PDF
+    const baseUrl = "https://careercast-omega.vercel.app";
+    const finalResultUrl = `${baseUrl}/final-result/${castId || "profile"}`;
+    console.log("🎯 Embedding absolute redirect to:", finalResultUrl);
 
-      // Fetch PDF
-      const existingPdfBytes = await fetch(resumeUrl).then((res) =>
-        res.arrayBuffer()
-      );
-      const pdfDoc = await PDFDocument.load(existingPdfBytes);
-      const firstPage = pdfDoc.getPages()[0];
-      const { width, height } = firstPage.getSize();
 
-      // Fetch button image
-      const imagePath = `${window.location.origin}/images/play_video_button.png`;
-      console.log("🔍 Fetching button image from:", imagePath);
-      const response = await fetch(imagePath);
-      if (!response.ok) throw new Error(`Image not found at ${imagePath}`);
-      const buttonBytes = await response.arrayBuffer();
-      const playButtonImage = await pdfDoc.embedPng(buttonBytes);
+    // Fetch and load the existing PDF
+    const existingPdfBytes = await fetch(resumeUrl).then((res) => res.arrayBuffer());
+    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+    const firstPage = pdfDoc.getPages()[0];
+    const { width, height } = firstPage.getSize();
 
-      const buttonWidth = 90;
-      const buttonHeight = 30;
-      const x = width - buttonWidth - 20;
-      const y = height - buttonHeight - 20;
+    // Load the play button image from public folder
+    const imagePath = `${baseUrl}/images/play_video_button.png`;
+    console.log("🖼️ Embedding play button from:", imagePath);
+    const imageResponse = await fetch(imagePath);
+    if (!imageResponse.ok) throw new Error(`Button image not found at ${imagePath}`);
 
-      // Draw image
-      firstPage.drawImage(playButtonImage, {
-        x,
-        y,
-        width: buttonWidth,
-        height: buttonHeight,
-      });
+    const imageBytes = await imageResponse.arrayBuffer();
+    const playButtonImage = await pdfDoc.embedPng(imageBytes);
 
-      // Clickable link
-      const context = pdfDoc.context;
-      const annotationDict = context.obj({
-        Type: PDFName.of("Annot"),
-        Subtype: PDFName.of("Link"),
-        Rect: context.obj([
-          PDFNumber.of(x),
-          PDFNumber.of(y),
-          PDFNumber.of(x + buttonWidth),
-          PDFNumber.of(y + buttonHeight),
-        ]),
-        Border: context.obj([PDFNumber.of(0), PDFNumber.of(0), PDFNumber.of(0)]),
-        A: context.obj({
-          S: PDFName.of("URI"),
-          URI: PDFString.of(finalResultUrl),
-        }),
-      });
+    // Position button (bottom-right corner)
+    const buttonWidth = 120;
+    const buttonHeight = 40;
+    const x = width - buttonWidth - 40;
+    const y = 40;
 
-      let annots = firstPage.node.lookup(PDFName.of("Annots"));
-      if (annots instanceof PDFArray) {
-        annots.push(annotationDict);
-      } else {
-        const annotsArray = context.obj([annotationDict]);
-        firstPage.node.set(PDFName.of("Annots"), annotsArray);
-      }
+    // Draw the play button image
+    firstPage.drawImage(playButtonImage, {
+      x,
+      y,
+      width: buttonWidth,
+      height: buttonHeight,
+    });
 
-      const modifiedPdfBytes = await pdfDoc.save();
-      const blob = new Blob([modifiedPdfBytes], { type: "application/pdf" });
-      return URL.createObjectURL(blob);
-    } catch (error) {
-      console.error("Error enhancing PDF:", error);
-      throw error;
+    // ✅ Create clickable annotation linking to FinalResult page
+    const context = pdfDoc.context;
+    const annotationDict = context.obj({
+      Type: PDFName.of("Annot"),
+      Subtype: PDFName.of("Link"),
+      Rect: context.obj([
+        PDFNumber.of(x),
+        PDFNumber.of(y),
+        PDFNumber.of(x + buttonWidth),
+        PDFNumber.of(y + buttonHeight),
+      ]),
+      Border: context.obj([PDFNumber.of(0), PDFNumber.of(0), PDFNumber.of(0)]),
+      A: context.obj({
+        S: PDFName.of("URI"),
+        URI: PDFString.of(finalResultUrl), // <-- this is the key link
+      }),
+    });
+
+    // Add annotation to the page
+    let annots = firstPage.node.lookup(PDFName.of("Annots"));
+    if (annots instanceof PDFArray) {
+      annots.push(annotationDict);
+    } else {
+      const annotsArray = context.obj([annotationDict]);
+      firstPage.node.set(PDFName.of("Annots"), annotsArray);
     }
-  };
+
+    // Save the modified PDF
+    const modifiedPdfBytes = await pdfDoc.save();
+    const blob = new Blob([new Uint8Array(modifiedPdfBytes)], { type: "application/pdf" });
+    return URL.createObjectURL(blob);
+  } catch (error) {
+    console.error("❌ Error enhancing PDF:", error);
+    throw error;
+  }
+};
 
   // ✅ Download Enhanced Resume
   const handleDownloadEnhanced = async () => {
@@ -562,9 +567,10 @@ const FinalResult: React.FC = () => {
 
       // ✅ Generate filename based on first name
       const firstName =
-        localStorage.getItem("first_name") ||
-        user?.user_metadata?.full_name?.split(" ")[0] ||
-        "user";
+  localStorage.getItem("first_name") ||
+  ((user as any)?.user_metadata?.full_name?.split(" ")[0]) ||
+  "user";
+
 
       const cleanFirstName = firstName.trim().replace(/\s+/g, "_").toLowerCase();
     //   const finalFileName = `${cleanFirstName}_careercast_resume.pdf`;
