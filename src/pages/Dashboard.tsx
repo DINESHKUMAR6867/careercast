@@ -38,7 +38,8 @@ export default function Dashboard() {
         created_at,
         recordings ( storage_path )
       `)
-      .eq("user_id", user.id)
+      .eq("user_id", user?.id)
+
       .order("created_at", { ascending: false });
 
     if (error) {

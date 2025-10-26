@@ -8,9 +8,11 @@ import { useAuth } from "../contexts/AuthContext";
 import mammoth from "mammoth";
 
 // ✅ PDF.js worker setup for Vite
-import * as pdfjsLib from "pdfjs-dist";
-import workerSrc from "pdfjs-dist/build/pdf.worker.mjs?url";
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+import * as pdfjsLib from "pdfjs-dist/build/pdf";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.js?url";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
 
 const Step2: React.FC = () => {
   const navigate = useNavigate();
@@ -72,9 +74,10 @@ const Step2: React.FC = () => {
       // --- Prepare metadata
       const ext = selectedFile.name.split(".").pop()?.toLowerCase();
       const firstName =
-        localStorage.getItem("first_name") ||
-        user?.user_metadata?.full_name?.split(" ")[0] ||
-        "user";
+  localStorage.getItem("first_name") ||
+  ((user as any)?.user_metadata?.full_name?.split(" ")[0]) ||
+  "user";
+
       const cleanFirst = firstName.trim().replace(/\s+/g, "_").toLowerCase();
       const fileName = `${cleanFirst}_careercast_resume.${ext}`;
       const filePath = `${user.id}/${fileName}`;

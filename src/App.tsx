@@ -1,7 +1,7 @@
 import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
-import Landing from './pages/Landing'
+import Landing from './pages/landing'
 import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
 import Step1 from './pages/Step1';

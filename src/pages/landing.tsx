@@ -212,7 +212,7 @@ export default function Landing() {
       "YOUR CAREER, CAST.", // text to type
       1000,                 // pause at end (1s)
     ]}
-    speed={0.2}             // ⏳ slower typing speed (higher = slower)
+    speed={0.2 as any}            // ⏳ slower typing speed (higher = slower)
     repeat={0}              // 🔁 0 = no repeat, only types once
     cursor={true}           // blinking cursor stays visible
     className="text-gray-900"

@@ -541,7 +541,7 @@ const FinalResult: React.FC = () => {
       }
 
       const modifiedPdfBytes = await pdfDoc.save();
-      const blob = new Blob([modifiedPdfBytes], { type: "application/pdf" });
+      const blob = new Blob([new Uint8Array(modifiedPdfBytes)], { type: "application/pdf" });
       return URL.createObjectURL(blob);
     } catch (error) {
       console.error("Error enhancing PDF:", error);
@@ -562,9 +562,10 @@ const FinalResult: React.FC = () => {
 
       // ✅ Generate filename based on first name
       const firstName =
-        localStorage.getItem("first_name") ||
-        user?.user_metadata?.full_name?.split(" ")[0] ||
-        "user";
+  localStorage.getItem("first_name") ||
+  ((user as any)?.user_metadata?.full_name?.split(" ")[0]) ||
+  "user";
+
 
       const cleanFirstName = firstName.trim().replace(/\s+/g, "_").toLowerCase();
     //   const finalFileName = `${cleanFirstName}_careercast_resume.pdf`;
