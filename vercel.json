@@ -1,8 +1,14 @@
 {
   "version": 2,
   "builds": [
-    { "src": "vite.config.ts", "use": "@vercel/static-build" },
-    { "src": "api/**/*.js", "use": "@vercel/node" }
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build"
+    },
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
   ],
   "routes": [
     {
@@ -14,10 +20,12 @@
       "dest": "/index.html"
     }
   ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "framework": "vite",
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "trailingSlash": false
 }
