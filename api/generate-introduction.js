@@ -30,11 +30,12 @@ export default async function handler(request, response) {
 
     console.log('📥 Processing POST request');
     
-    // Parse JSON body
+    // Parse JSON body - more robust handling
     let jsonData;
     try {
       jsonData = await request.json();
-      console.log('📥 Parsed JSON data successfully');
+      console.log('📥 Parsed JSON data type:', typeof jsonData);
+      console.log('📥 Parsed JSON keys:', jsonData ? Object.keys(jsonData) : 'null');
     } catch (parseError) {
       console.error('❌ Failed to parse JSON:', parseError);
       return response.status(400).json({ 
@@ -43,7 +44,17 @@ export default async function handler(request, response) {
       });
     }
     
-    const { prompt } = jsonData || {};
+    // Handle case where jsonData might not be an object
+    if (!jsonData || typeof jsonData !== 'object') {
+      console.error('❌ JSON data is not an object:', jsonData);
+      return response.status(400).json({ 
+        error: 'Invalid request body format',
+        received: jsonData,
+        type: typeof jsonData
+      });
+    }
+    
+    const { prompt } = jsonData;
     console.log('📥 Received prompt, exists:', !!prompt);
 
     if (!prompt) {

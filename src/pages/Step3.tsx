@@ -23,13 +23,18 @@ const Step3: React.FC = () => {
       console.log('📤 Prompt length:', prompt.length);
       console.log('📤 Prompt preview:', prompt.substring(0, 100) + '...');
       
+      // Prepare the request body
+      const requestBody = { prompt };
+      console.log('📤 Request body type:', typeof requestBody);
+      console.log('📤 Request body keys:', Object.keys(requestBody));
+      
       // In production, call our own backend endpoint
       const response = await fetch("/api/generate-introduction", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify(requestBody),
       });
 
       console.log('📥 Response status:', response.status);
