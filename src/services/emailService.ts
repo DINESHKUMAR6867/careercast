@@ -12,11 +12,15 @@ class EmailService {
       const data = await response.json();
       
       if (data.success) {
+        // Check if we're in development mode with a visible OTP
+        if (data.developmentOtp) {
+          console.log(`📧 Development OTP for ${email}: ${data.developmentOtp}`);
+        }
         return true;
       } else {
         // If email fails, log OTP for development
         console.log(`📧 OTP for ${email}: ${otp}`);
-        throw new Error(data.message);
+        throw new Error(data.message || 'Failed to send OTP');
       }
     } catch (error) {
       // Fallback - log OTP for development
