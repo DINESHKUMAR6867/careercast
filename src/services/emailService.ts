@@ -20,7 +20,7 @@ class EmailService {
       } else {
         // If email fails, log OTP for development
         console.log(`📧 OTP for ${email}: ${otp}`);
-        throw new Error(data.message || 'Failed to send OTP');
+        throw new Error(data.error || 'Failed to send OTP');
       }
     } catch (error) {
       // Fallback - log OTP for development
