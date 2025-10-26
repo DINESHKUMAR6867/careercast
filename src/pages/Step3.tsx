@@ -28,7 +28,11 @@ const Step3: React.FC = () => {
         body: JSON.stringify({ prompt }),
       });
 
-      if (!response.ok) throw new Error("Failed to generate introduction");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error Response:', errorData);
+        throw new Error(`Failed to generate introduction: ${response.status} ${response.statusText}`);
+      }
       const data = await response.json();
       return data.introduction;
     } else {
