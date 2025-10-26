@@ -23,19 +23,24 @@ export default async function handler(request, response) {
     console.log('❌ Method not allowed:', request.method);
     response.status(405).json({
       success: false,
-      error: 'Method not allowed'
+      error: 'Method not allowed',
+      allowed: ['POST'],
+      received: request.method
     });
     return;
   }
   
   try {
-    // Manual body parsing to avoid iteration errors
-    const chunks = [];
-    for await (const chunk of request) {
-      chunks.push(chunk);
+    // Parse JSON body - using text() method which is more reliable
+    const rawBody = await request.text();
+    console.log('📥 Raw body length:', rawBody.length);
+    
+    let jsonData;
+    if (rawBody) {
+      jsonData = JSON.parse(rawBody);
+    } else {
+      jsonData = {};
     }
-    const rawBody = Buffer.concat(chunks).toString();
-    const jsonData = rawBody ? JSON.parse(rawBody) : {};
     
     console.log('📥 Parsed JSON data type:', typeof jsonData);
     console.log('📥 Parsed JSON keys:', jsonData ? Object.keys(jsonData) : 'null');
