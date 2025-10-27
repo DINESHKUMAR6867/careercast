@@ -75,8 +75,9 @@ export default function Auth() {
   };
 
   const handleVerifyOTP = () => {
-    console.log("v1",formData.email);
     if (verifyOTP(formData.email, otp)) {
+      console.log("v1",formData.email);
+      console.log("v2",otp);
       setOtpVerified(true);
     } else {
       alert('Invalid OTP. Please try again.');
@@ -429,3 +430,4 @@ export default function Auth() {
   );
 
 }
+
