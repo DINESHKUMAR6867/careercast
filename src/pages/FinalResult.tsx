@@ -149,11 +149,11 @@
 // </script>
 //       `.trim();
 
-//       const blob = new Blob([enhancedResumeContent], { type: 'text/html' });
+//       const blob = new Blob([dResumeContent], { type: 'text/html' });
 //       const url = URL.createObjectURL(blob);
 //       const a = document.createElement('a');
 //       a.href = url;
-//       a.download = `enhanced_${careerCast?.resumeFileName?.replace('.pdf', '.html') || 'resume.html'}`;
+//       a.download = `d_${careerCast?.resumeFileName?.replace('.pdf', '.html') || 'resume.html'}`;
 //       document.body.appendChild(a);
 //       a.click();
 //       document.body.removeChild(a);
@@ -272,7 +272,7 @@
 //               className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
 //             >
 //               <Download className="h-4 w-4" />
-//               Download Enhanced Resume
+//               Download d Resume
 //             </Button>
 //           )}
 
@@ -478,36 +478,37 @@ const FinalResult: React.FC = () => {
     navigate("/");
   };
 
-  // ✅ Enhance PDF with embedded play button
+  // ✅  PDF with embedded play button
   // ✅ Enhance PDF with embedded clickable "Play Video" button
+// ✅ Enhance PDF with embedded clickable "Play Video" button (Top-Right)
 const enhancePDF = async (resumeUrl: string, castId: string) => {
   try {
-    // ✅ Use absolute domain to ensure redirect works even in downloaded PDF
-    const baseUrl = "https://careercast-omega.vercel.app";
+    // Absolute URL of the current page for redirect
+    const baseUrl = window.location.origin || "https://careercast-omega.vercel.app";
     const finalResultUrl = `${baseUrl}/final-result/${castId || "profile"}`;
-    console.log("🎯 Embedding absolute redirect to:", finalResultUrl);
+    console.log("🎯 Embedding link to:", finalResultUrl);
 
-
-    // Fetch and load the existing PDF
+    // Fetch and load the original PDF
     const existingPdfBytes = await fetch(resumeUrl).then((res) => res.arrayBuffer());
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
     const firstPage = pdfDoc.getPages()[0];
     const { width, height } = firstPage.getSize();
 
-    // Load the play button image from public folder
+    // Load play button image
     const imagePath = `${baseUrl}/images/play_video_button.png`;
-    console.log("🖼️ Embedding play button from:", imagePath);
+    console.log("🖼️ Loading play button image from:", imagePath);
     const imageResponse = await fetch(imagePath);
     if (!imageResponse.ok) throw new Error(`Button image not found at ${imagePath}`);
 
     const imageBytes = await imageResponse.arrayBuffer();
     const playButtonImage = await pdfDoc.embedPng(imageBytes);
 
-    // Position button (bottom-right corner)
+    // ✅ Position at Top-Right corner
     const buttonWidth = 120;
     const buttonHeight = 40;
-    const x = width - buttonWidth - 40;
-    const y = 40;
+    const margin = 30;
+    const x = width - buttonWidth - margin;
+    const y = height - buttonHeight - margin;
 
     // Draw the play button image
     firstPage.drawImage(playButtonImage, {
@@ -517,7 +518,7 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
       height: buttonHeight,
     });
 
-    // ✅ Create clickable annotation linking to FinalResult page
+    // ✅ Create clickable annotation linking to the current FinalResult page
     const context = pdfDoc.context;
     const annotationDict = context.obj({
       Type: PDFName.of("Annot"),
@@ -531,11 +532,11 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
       Border: context.obj([PDFNumber.of(0), PDFNumber.of(0), PDFNumber.of(0)]),
       A: context.obj({
         S: PDFName.of("URI"),
-        URI: PDFString.of(finalResultUrl), // <-- this is the key link
+        URI: PDFString.of(finalResultUrl),
       }),
     });
 
-    // Add annotation to the page
+    // Attach annotation
     let annots = firstPage.node.lookup(PDFName.of("Annots"));
     if (annots instanceof PDFArray) {
       annots.push(annotationDict);
@@ -689,3 +690,4 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
 };
 
 export default FinalResult;
+
