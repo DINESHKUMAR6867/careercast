@@ -9,12 +9,14 @@ interface OTPData {
 
 class OTPService {
   private otpStorage: Map<string, OTPData> = new Map();
+  console.log("v3");
 
   generateOTP(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
   storeOTP(email: string, otp: string): void {
+  console.log("v4");
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
     this.otpStorage.set(email, { email, otp, expiresAt, verified: false });
 
@@ -25,15 +27,21 @@ class OTPService {
   }
 
   verifyOTP(email: string, otp: string): boolean {
+  console.log("v5");
     const record = this.otpStorage.get(email);
+    
+  console.log("v6",record);
     if (!record) return false;
 
     if (Date.now() > record.expiresAt) {
+  console.log("v7");
       this.otpStorage.delete(email);
       return false;
     }
 
     if (record.otp === otp) {
+      
+  console.log("v8");
       record.verified = true;
       return true;
     }
@@ -41,6 +49,8 @@ class OTPService {
   }
 
   isOTPVerified(email: string): boolean {
+    
+  console.log("v9");
     return this.otpStorage.get(email)?.verified || false;
   }
 
@@ -52,3 +62,4 @@ class OTPService {
 // ✅ Export both named and default — compatible with all imports
 export const otpService = new OTPService();
 export default otpService;
+
