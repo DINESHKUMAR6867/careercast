@@ -486,6 +486,7 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
     // Absolute URL of the current page for redirect
     const baseUrl = window.location.origin || "https://careercast-omega.vercel.app";
     const finalResultUrl = `${baseUrl}/final-result/${castId || "profile"}`;
+
     console.log("🎯 Embedding link to:", finalResultUrl);
 
     // Fetch and load the original PDF
@@ -695,5 +696,6 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
 };
 
 export default FinalResult;
+
 
 
