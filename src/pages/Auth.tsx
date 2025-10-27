@@ -75,6 +75,7 @@ export default function Auth() {
   };
 
   const handleVerifyOTP = () => {
+    console.log("v1",formData.email);
     if (verifyOTP(formData.email, otp)) {
       setOtpVerified(true);
     } else {
@@ -426,4 +427,5 @@ export default function Auth() {
       </div>
     </div>
   );
+
 }
