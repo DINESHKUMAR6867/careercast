@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   if (!email) return res.status(400).json({ error: "Email is required" });
 
   const otp = Math.floor(100000 + Math.random() * 900000);
-  console.log(`📧 Sending OTP ${otp} to ${email}`);
+  console.log(`📧 Sending OTP ${otp} to ${email} send-otp`);
 
   try {
     // 🔐 Get Microsoft Graph access token
@@ -339,4 +339,5 @@ export default async function handler(req, res) {
 //   // Unknown action
 //   return res.status(400).json({ error: "Invalid action. Use 'send' or 'verify'." });
 // }
+
 
