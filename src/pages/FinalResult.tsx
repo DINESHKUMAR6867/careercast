@@ -498,7 +498,11 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
     const imagePath = `${baseUrl}/images/play_video_button.png`;
     console.log("🖼️ Loading play button image from:", imagePath);
     const imageResponse = await fetch(imagePath);
-    if (!imageResponse.ok) throw new Error(`Button image not found at ${imagePath}`);
+
+    // Check if the image fetch is successful
+    if (!imageResponse.ok) {
+      throw new Error(`Button image not found at ${imagePath}, received status: ${imageResponse.status}`);
+    }
 
     const imageBytes = await imageResponse.arrayBuffer();
     const playButtonImage = await pdfDoc.embedPng(imageBytes);
@@ -554,6 +558,7 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
     throw error;
   }
 };
+
 
   // ✅ Download Enhanced Resume
   const handleDownloadEnhanced = async () => {
@@ -690,4 +695,5 @@ const enhancePDF = async (resumeUrl: string, castId: string) => {
 };
 
 export default FinalResult;
+
 
