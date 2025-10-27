@@ -74,16 +74,18 @@ export default function Auth() {
     }
   };
 
-  const handleVerifyOTP = () => {
-    console.log("d",otp);
-    if (verifyOTP(formData.email, otp)) {
-      console.log("v1",formData.email);
-      console.log("v2",otp);
-      setOtpVerified(true);
-    } else {
-      alert('Invalid OTP. Please try again.');
-    }
-  };
+  const handleVerifyOTP = async () => {
+  console.log("d", otp);
+  const verified = await verifyOTP(formData.email, otp);
+  if (verified) {
+    console.log("v1", formData.email);
+    console.log("v2", otp);
+    setOtpVerified(true);
+  } else {
+    alert('Invalid OTP. Please try again.');
+  }
+};
+
 
   const handleResendOTP = async () => {
     if (countdown > 0) return;
@@ -431,5 +433,6 @@ export default function Auth() {
   );
 
 }
+
 
 
