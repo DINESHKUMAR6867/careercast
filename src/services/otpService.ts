@@ -9,7 +9,6 @@ interface OTPData {
 
 class OTPService {
   private otpStorage: Map<string, OTPData> = new Map();
-  console.log("v3");
 
   generateOTP(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -62,4 +61,5 @@ class OTPService {
 // ✅ Export both named and default — compatible with all imports
 export const otpService = new OTPService();
 export default otpService;
+
 
