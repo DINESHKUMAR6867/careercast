@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
@@ -9,7 +9,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  base: '', // ✅ empty string = correct for Vercel (relative URLs)
+  base: '/',  // Ensure base is set to '/' for absolute URLs (in case Vercel routes it under a sub-path)
   build: {
     outDir: 'dist',
     sourcemap: false,
@@ -23,4 +23,4 @@ export default defineConfig({
       },
     },
   },
-})
+});
