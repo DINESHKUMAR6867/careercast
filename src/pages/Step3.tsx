@@ -80,10 +80,19 @@ const Step3: React.FC = () => {
 
   // ------------- PROMPT BUILDER ----------------
   const buildPrompt = (jobTitle: string, jobDescription: string, resumeText: string) => `
-You are an expert HR assistant. Write a *polite, professional, legally appropriate*
-self-introduction video script for a candidate applying for the position of **${jobTitle}**.
+You are a senior HR communications expert with 20+ years of experience crafting professional, recruiter-approved self-introduction video scripts. You also conduct continuous industry research, similar to platforms like ResLink, LinkedIn Talent Insights, SHRM (Society for Human Resource Management), and modern employer branding best practices.
+ 
+Your first task is to internally analyze proven HR and recruiter preferences for effective video introductions. Incorporate insights related to:
 
-Use the information below:
+- The target audience for such videos (recruiters, hiring managers, tech leads, HR screeners).
+- Personal branding elements that recruiters respond well to.
+- Ideal retention duration (45–60 seconds).
+- High-impact components that increase interview callbacks: clarity, confidence, relevant experience, quantified achievements when available, communication skills, role alignment, and a clear closing.
+- Industry nuances (e.g., tech, marketing, product, data, sales, finance roles).
+- Tone variation based on seniority (entry-level vs. mid-level vs. senior roles).
+- Importance of authenticity and conversational delivery without sounding scripted or robotic.
+ 
+Next, using this research-informed understanding, write a polished, natural-sounding video script of approximately 45–60 seconds (120–150 words) for a candidate applying for the role: **${jobTitle}**.
 
 📋 Job Description:
 ${jobDescription}
@@ -91,17 +100,40 @@ ${jobDescription}
 📄 Candidate Resume Text:
 ${resumeText}
 
-✍️ Instructions:
-- Duration ≈ 45–60 seconds (≈ 120–150 words)
-- Begin with a warm, professional greeting (e.g., “Hello, my name is …”)
-- Mention the ${jobTitle} role naturally.
-- Highlight the candidate’s strongest, most relevant experience.
-- Keep it confident, humble, and human (not robotic).
-- Avoid disclosing personal information beyond [Your Name].
-- End with enthusiasm about the opportunity and gratitude.
+🎯 Purpose:
+Create a short, engaging, professional video introduction that the candidate would proudly record and send to hiring teams, demonstrating clarity, capability, and alignment with the role.
 
-Format as plain text (no Markdown). 
+📌 Tone & Style Requirements:
+- Warm, confident, and respectful (not overly casual, not robotic).
+- First-person (“I” voice).
+- Conversational and authentic, as if spoken naturally.
+- Professional but approachable.
+- Enthusiastic, without sounding desperate.
+- Brief and focused—do not summarize the full resume.
+
+✅ The Script MUST Include:
+1. A brief professional greeting (e.g., “Hello, my name is…”).
+2. A natural mention of interest in the ${jobTitle} role.
+3. One or two impactful strengths or achievements drawn directly from ${resumeText}, preferably using quantifiable results if available.
+4. A clear connection between the candidate’s experience and the key expectations from ${jobDescription}.
+5. A strong closing that expresses enthusiasm and includes a light call to action (e.g., openness to discuss further) and gratitude.
+
+🚫 The Script MUST AVOID:
+- Personal details beyond [Your Name].
+- Overly generic buzzword stuffing or vague phrasing.
+- Exaggerated or false claims that are not supported by ${resumeText}.
+- Sensitive details such as age, marital status, location, nationality, etc.
+- Robotic or overly formal language (“I would like to hereby…”).
+
+🧠 Output Requirement:
+- Deliver ONLY the final script as plain text.
+- Do not use headings, bullet points, labels, or formatting.
+- Ensure the script sounds like a real spoken delivery, not written text.
+
+Now, apply your HR insights and generate the final optimized script.
 `;
+
+
 
   // ----------- GENERATE INTRO ------------------
   const generateIntroduction = async (rewrite = false) => {
@@ -319,3 +351,4 @@ Format as plain text (no Markdown).
 };
 
 export default Step3;
+
